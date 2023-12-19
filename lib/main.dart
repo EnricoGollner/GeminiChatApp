@@ -5,7 +5,7 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() {
-  Gemini.init(apiKey: 'AIzaSyAMfF_MIvqCYGL6tsRRz6y-uhawoVhT3VE');
+  Gemini.init(apiKey: 'AIzaSyDcmQTG7Uk4IGRX5FMn2JK_3Y7XSjj9hrI');
 
   runApp(const ChatApp());
 }
