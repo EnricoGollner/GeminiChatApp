@@ -13,14 +13,21 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _textEditingController = TextEditingController();
 
   List<Content> chatHistory = [];
-
-  Content conteudo = Content();
+  Content geminiResponse = Content();
 
   @override
   void initState() {
     super.initState();
 
     gemini = Gemini.instance;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await gemini.text('Olá').then((resposta) => geminiResponse =
+          Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
+      setState(() {
+        chatHistory.add(geminiResponse);
+      });
+    });
   }
 
   @override
@@ -34,43 +41,58 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           children: [
             Expanded(
-              child: FutureBuilder(
-                  future: gemini.chat([
-                    _textEditingController.text.isEmpty
-                        ? Content(parts: [Parts(text: 'Olá')], role: '')
-                        : conteudo,
-                  ]),
-                  builder: (context, snapshot) {
-                    Content geminiResponse = Content(parts: [
-                      Parts(
-                          text: _textEditingController.text.isEmpty
-                              ? ''
-                              : snapshot.data?.output)
-                    ], role: 'model');
-                    chatHistory.add(geminiResponse);
-                    return snapshot.connectionState == ConnectionState.done
-                        ? ListView.builder(
-                            itemCount: chatHistory.length,
-                            itemBuilder: (context, index) {
-                              Parts messagePart = chatHistory[index].parts![0];
-                              String role = chatHistory[index].role!;
-
-                              return ListTile(
-                                title: Text(messagePart.text!),
-                                subtitle: Text(role),
-                              );
-                            },
-                          )
-                        : const Padding(padding: EdgeInsets.all(0));
-                  }),
+              child: ListView.builder(
+                itemCount: chatHistory.length,
+                itemBuilder: (context, index) {
+                  Parts messagePart = chatHistory[index].parts![0];
+                  String role = chatHistory[index].role!;
+                  return ListTile(
+                    title: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: role == 'user' ? Colors.blue : Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        messagePart.text!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        role == 'user' ? 'Você' : 'Gemini',
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(
+              height: 20,
             ),
             TextFormField(
               controller: _textEditingController,
               decoration: InputDecoration(
                 labelText: 'Digite algo',
+                filled: true,
+                fillColor: Colors.green[50],
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: _handleSubmit,
+                  color: Colors.blue,
                 ),
               ),
             ),
@@ -80,12 +102,17 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
+    Content userMessage = Content(
+        parts: [Parts(text: _textEditingController.text)], role: 'user');
     setState(() {
-      Content userMessage = Content(
-          parts: [Parts(text: _textEditingController.text)], role: 'user');
       chatHistory.add(userMessage);
       _textEditingController.clear();
+    });
+    await gemini.chat([userMessage]).then((resposta) => geminiResponse =
+        Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
+    setState(() {
+      chatHistory.add(geminiResponse);
     });
   }
 }
