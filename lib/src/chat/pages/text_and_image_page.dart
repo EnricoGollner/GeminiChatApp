@@ -1,20 +1,26 @@
-import 'package:chat_bot_app/src/chat/pages/text_and_image_page.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:chat_bot_app/src/chat/pages/chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:image_picker/image_picker.dart';
 
-class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+class TextAndImagePage extends StatefulWidget {
+  const TextAndImagePage({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<TextAndImagePage> createState() => _TextAndImagePageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _TextAndImagePageState extends State<TextAndImagePage> {
   late Gemini gemini;
   final TextEditingController _textEditingController = TextEditingController();
 
   List<Content> chatHistory = [];
   Content geminiResponse = Content();
+
+  Uint8List imageBytes = Uint8List.fromList([]);
 
   @override
   void initState() {
@@ -54,12 +60,12 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             ListTile(
-              title: const Text('Texto e imagem'),
+              title: const Text('Apenas texto'),
               onTap: () {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const TextAndImagePage(),
+                    builder: (context) => const ChatPage(),
                   ),
                 );
               },
@@ -120,10 +126,19 @@ class _ChatPageState extends State<ChatPage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _handleSubmit,
-                  color: Colors.blue,
+                suffixIcon: Column(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.photo),
+                      onPressed: _pickImage,
+                      color: Colors.green,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _handleSubmit,
+                      color: Colors.blue,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -133,17 +148,39 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      setState(() {
+        imageBytes = file.readAsBytesSync();
+      });
+    }
+  }
+
   Future<void> _handleSubmit() async {
-    Content userMessage = Content(
-        parts: [Parts(text: _textEditingController.text)], role: 'user');
-    setState(() {
-      chatHistory.add(userMessage);
-      _textEditingController.clear();
-    });
-    await gemini.chat([userMessage]).then((resposta) => geminiResponse =
-        Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
-    setState(() {
-      chatHistory.add(geminiResponse);
-    });
+    if (imageBytes.isNotEmpty) {
+      Content userMessage = Content(
+          parts: [Parts(text: _textEditingController.text)], role: 'user');
+      setState(() {
+        chatHistory.add(userMessage);
+      });
+
+      await gemini
+          .textAndImage(
+            text: _textEditingController.text,
+            image: imageBytes,
+          )
+          .then(
+            (resposta) => geminiResponse = Content(
+                parts: [Parts(text: '${resposta!.output}')], role: 'model'),
+          );
+
+      setState(() {
+        chatHistory.add(geminiResponse);
+      });
+    }
   }
 }
