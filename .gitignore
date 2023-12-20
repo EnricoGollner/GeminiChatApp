@@ -42,5 +42,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-#pessoal
+# linux, macos, web, windows
+/linux/
+/macos/
+/web/
+/windows/
+
+# Ambiente
 *.env

@@ -134,16 +134,18 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSubmit() async {
-    Content userMessage = Content(
-        parts: [Parts(text: _textEditingController.text)], role: 'user');
-    setState(() {
-      chatHistory.add(userMessage);
-      _textEditingController.clear();
-    });
-    await gemini.chat([userMessage]).then((resposta) => geminiResponse =
-        Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
-    setState(() {
-      chatHistory.add(geminiResponse);
-    });
+    if (_textEditingController.text.isNotEmpty) {
+      Content userMessage = Content(
+          parts: [Parts(text: _textEditingController.text)], role: 'user');
+      setState(() {
+        chatHistory.add(userMessage);
+        _textEditingController.clear();
+      });
+      await gemini.chat([userMessage]).then((resposta) => geminiResponse =
+          Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
+      setState(() {
+        chatHistory.add(geminiResponse);
+      });
+    }
   }
 }

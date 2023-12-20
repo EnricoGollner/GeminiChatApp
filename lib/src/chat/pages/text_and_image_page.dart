@@ -20,8 +20,9 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
 
   List<Content> chatHistory = [];
   Content geminiResponse = Content();
-
   Uint8List imageBytes = Uint8List.fromList([]);
+  List<Uint8List> imageList = [];
+  List<int> imageIndexes = [];
 
   @override
   void initState() {
@@ -93,7 +94,7 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: messagePart.text == 'ImagemEnviada'
-                          ? Image.memory(imageBytes)
+                          ? Image.memory(imageList[imageIndexes.indexOf(index)])
                           : Text(
                               messagePart.text!,
                               style: const TextStyle(
@@ -115,9 +116,6 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                   );
                 },
               ),
-            ),
-            const SizedBox(
-              height: 20,
             ),
             TextFormField(
               controller: _textEditingController,
@@ -158,12 +156,19 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
 
     if (pickedFile != null) {
       final file = File(pickedFile.path);
+
       setState(() {
         imageBytes = file.readAsBytesSync();
+        imageList.add(imageBytes);
+        imageIndexes.add(chatHistory.length);
         Content imageMessage =
             Content(parts: [Parts(text: 'ImagemEnviada')], role: 'user');
         chatHistory.add(imageMessage);
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(seconds: 1),
+          curve: Curves.easeInOut,
+        );
       });
     }
   }
@@ -175,7 +180,11 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
       setState(() {
         chatHistory.add(userMessage);
         _textEditingController.clear();
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(seconds: 1),
+          curve: Curves.easeInOut,
+        );
       });
 
       await gemini
@@ -190,7 +199,11 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
 
       setState(() {
         chatHistory.add(geminiResponse);
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(seconds: 1),
+          curve: Curves.easeInOut,
+        );
       });
     }
   }
