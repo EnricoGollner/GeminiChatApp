@@ -6,7 +6,7 @@ final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 void main() {
-  Gemini.init(apiKey: '');
+  Gemini.init(apiKey: 'AIzaSyDxcLVQbF3IuJFd9xvsVXlVQqoFLCiJTgU');
 
   runApp(const ChatApp());
 }

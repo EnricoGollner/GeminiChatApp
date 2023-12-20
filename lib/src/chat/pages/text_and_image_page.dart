@@ -15,6 +15,7 @@ class TextAndImagePage extends StatefulWidget {
 
 class _TextAndImagePageState extends State<TextAndImagePage> {
   late Gemini gemini;
+  final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
   List<Content> chatHistory = [];
@@ -79,6 +80,7 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
           children: [
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 itemCount: chatHistory.length,
                 itemBuilder: (context, index) {
                   Parts messagePart = chatHistory[index].parts![0];
@@ -90,13 +92,15 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                         color: role == 'user' ? Colors.blue : Colors.green,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        messagePart.text!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: messagePart.text == 'ImagemEnviada'
+                          ? Image.memory(imageBytes)
+                          : Text(
+                              messagePart.text!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
@@ -156,16 +160,22 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
       final file = File(pickedFile.path);
       setState(() {
         imageBytes = file.readAsBytesSync();
+        Content imageMessage =
+            Content(parts: [Parts(text: 'ImagemEnviada')], role: 'user');
+        chatHistory.add(imageMessage);
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       });
     }
   }
 
   Future<void> _handleSubmit() async {
-    if (imageBytes.isNotEmpty) {
+    if (imageBytes.isNotEmpty && _textEditingController.text.isNotEmpty) {
       Content userMessage = Content(
           parts: [Parts(text: _textEditingController.text)], role: 'user');
       setState(() {
         chatHistory.add(userMessage);
+        _textEditingController.clear();
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       });
 
       await gemini
@@ -180,6 +190,7 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
 
       setState(() {
         chatHistory.add(geminiResponse);
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       });
     }
   }
