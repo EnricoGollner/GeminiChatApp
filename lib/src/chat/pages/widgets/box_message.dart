@@ -26,14 +26,15 @@ class BoxMessage extends StatelessWidget {
           children: [
             Visibility(
               visible: image != null,
-              child: Image.memory(image ?? Uint8List.fromList([])),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Image.memory(image ?? Uint8List.fromList([]))),
             ),
-            const SizedBox(height: 10),
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: sender == MessageSender.gemini ? null : FontWeight.bold,
               ),
             ),
           ],

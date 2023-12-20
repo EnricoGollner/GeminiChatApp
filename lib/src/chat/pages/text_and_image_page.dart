@@ -23,8 +23,8 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
   final TextEditingController _textEditingController = TextEditingController();
 
   List<PromptChatAndImage> chatHistory = [];
-  PromptChatAndImage geminiResponse = PromptChatAndImage(sender: MessageSender.gemini, message: '');
-  PromptChatAndImage userMessage = PromptChatAndImage(sender: MessageSender.user, message: '');
+  PromptChatAndImage geminiResponse = PromptChatAndImage(sender: MessageSender.gemini);
+  PromptChatAndImage userMessageWithImage = PromptChatAndImage(sender: MessageSender.user);
 
   Uint8List imageBytes = Uint8List.fromList([]);
   List<Uint8List> imageList = [];
@@ -97,9 +97,7 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                 },
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             BoxTextField(
               controller: _textEditingController,
               onFieldSubmitted: _handleSubmit,
@@ -141,17 +139,17 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
 
       setState(() {
         imageBytes = file.readAsBytesSync();
-        userMessage = userMessage.copyWith(imageBytes: imageBytes);
+        userMessageWithImage = userMessageWithImage.copyWith(imageBytes: imageBytes);
       });
     }
   }
 
   Future<void> _handleSubmit() async {
-    userMessage = userMessage.copyWith(message: _textEditingController.text);
+    userMessageWithImage = userMessageWithImage.copyWith(message: _textEditingController.text);
     
-    if (userMessage.imageBytes != null && userMessage.message.isNotEmpty) {
+    if (userMessageWithImage.imageBytes != null && userMessageWithImage.message.isNotEmpty) {
       setState(() {
-        chatHistory.add(userMessage);
+        chatHistory.add(userMessageWithImage);
         _textEditingController.clear();
         _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
       });
@@ -167,6 +165,8 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
         chatHistory.add(geminiResponse);
         _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
       });
+    } else {
+      
     }
   }
 }

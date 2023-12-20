@@ -10,7 +10,7 @@ class PromptChatAndImage extends PromptChat {
   PromptChatAndImage({
     required super.sender,
     this.imageBytes,
-    required super.message,
+    super.message = '',
   });
 
   PromptChatAndImage copyWith({

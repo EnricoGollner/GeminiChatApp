@@ -1,3 +1,6 @@
+import 'package:chat_bot_app/src/chat/bloc/chat_bloc.dart';
+import 'package:chat_bot_app/src/chat/bloc/chat_event.dart';
+import 'package:chat_bot_app/src/chat/bloc/chat_state.dart';
 import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
 import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
 import 'package:chat_bot_app/src/chat/pages/text_and_image_page.dart';
@@ -5,6 +8,7 @@ import 'package:chat_bot_app/src/chat/pages/widgets/box_message.dart';
 import 'package:chat_bot_app/src/chat/pages/widgets/box_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -15,6 +19,8 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late Gemini gemini;
+  late ChatBloc bloc;
+
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
@@ -24,14 +30,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-
     gemini = Gemini.instance;
+    bloc = Provider.of<ChatBloc>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await gemini.text('Olá').then((response) => geminiResponse = PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''));
-      setState(() {
-        chatHistory.add(geminiResponse);
-      });
+
+      bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: geminiResponse));
     });
   }
 
@@ -58,7 +63,8 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             ListTile(
-              title: const Text('Texto e imagem', style: TextStyle(color: Colors.blue)),
+              title: const Text('Texto e imagem',
+                  style: TextStyle(color: Colors.blue)),
               onTap: () {
                 Navigator.pushReplacement(
                   context,
@@ -76,15 +82,23 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: chatHistory.length,
-                itemBuilder: (context, index) {
+                child: StreamBuilder(
+              stream: bloc.chatOutputStream,
+              builder: (context, AsyncSnapshot<ChatState> snapshot) {
+                List<PromptChat> chatHistoryFromState = snapshot.data?.chatHistory ?? [];
 
-                  return BoxMessage(sender: chatHistory[index].sender, message: chatHistory[index].message);
-                },
-              ),
-            ),
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: chatHistoryFromState.length,
+                  itemBuilder: (context, index) {
+                    return BoxMessage(
+                      message: chatHistoryFromState[index].message,
+                      sender: chatHistoryFromState[index].sender,
+                    );
+                  },
+                );
+              },
+            )),
             const SizedBox(height: 20),
             BoxTextField(
               controller: _textEditingController,
@@ -103,19 +117,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSubmit() async {
-    PromptChat userMessage = PromptChat(sender: MessageSender.user, message: _textEditingController.text);
-
-    setState(() {
-      chatHistory.add(userMessage);
-      _textEditingController.clear();
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-    });
-
-    await gemini.text(userMessage.message).then((response) => geminiResponse = PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''));
-
-    setState(() {
-      chatHistory.add(geminiResponse);
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-    });
+    bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: PromptChat(sender: MessageSender.user, message: _textEditingController.text)));
+    _textEditingController.clear();
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
   }
+
 }
