@@ -16,8 +16,8 @@ class ChatLoadingState extends ChatState {
   ChatLoadingState() : super(userMessage: PromptChat(sender: MessageSender.user, message: ''), chatHistory: []);
 }
 
-class ChatLoadedState extends ChatState {
-  ChatLoadedState({required super.userMessage, required super.chatHistory});
+class ChatSuccessState extends ChatState {
+  ChatSuccessState({required super.userMessage, required super.chatHistory});
 }
 
 class ChatFailureState extends ChatState {

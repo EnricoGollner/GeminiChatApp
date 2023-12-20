@@ -7,7 +7,6 @@ import 'package:chat_bot_app/src/chat/pages/text_and_image_page.dart';
 import 'package:chat_bot_app/src/chat/pages/widgets/box_message.dart';
 import 'package:chat_bot_app/src/chat/pages/widgets/box_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -18,7 +17,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  late Gemini gemini;
   late ChatBloc bloc;
 
   final ScrollController _scrollController = ScrollController();
@@ -30,14 +28,9 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    gemini = Gemini.instance;
     bloc = Provider.of<ChatBloc>(context, listen: false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await gemini.text('Olá').then((response) => geminiResponse = PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''));
-
-      bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: geminiResponse));
-    });
+    
+    bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: geminiResponse));
   }
 
   @override

@@ -18,21 +18,25 @@ class ChatBloc {
       await _mapEventToState(event);
     },);
   }
-  
-  get gemini => Gemini.instance;
+
 
   Future<void> _mapEventToState(ChatEvent event) async {
     List<PromptChat> chatHistory = [];
     _chatOutputController.add(ChatLoadingState());
 
     if (event is LoadChatEvent) {
-      _chatOutputController.add(ChatInitialState());
+      await Gemini.instance.text('Olá, Gemini!').then(
+        (response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''))
+      );
     } else if (event is SendMessageChatEvent) {
       chatHistory.add(event.promptMessage);
-      await gemini.text(event.promptMessage.message).then((response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? '')));
       
-      _chatOutputController.add(ChatLoadedState(userMessage: event.promptMessage, chatHistory: chatHistory));
+      await Gemini.instance.text(event.promptMessage.message).then(
+        (response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''))
+      );
     }
+
+    _chatOutputController.add(ChatSuccessState(userMessage: chatHistory.last, chatHistory: chatHistory));
   }
 
   void dispose() {
