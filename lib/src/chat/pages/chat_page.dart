@@ -1,4 +1,8 @@
+import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
+import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
 import 'package:chat_bot_app/src/chat/pages/text_and_image_page.dart';
+import 'package:chat_bot_app/src/chat/pages/widgets/box_message.dart';
+import 'package:chat_bot_app/src/chat/pages/widgets/box_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 
@@ -11,10 +15,11 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late Gemini gemini;
+  final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
-  List<Content> chatHistory = [];
-  Content geminiResponse = Content();
+  List<PromptChat> chatHistory = [];
+  PromptChat geminiResponse = PromptChat(sender: MessageSender.gemini, message: '');
 
   @override
   void initState() {
@@ -23,8 +28,7 @@ class _ChatPageState extends State<ChatPage> {
     gemini = Gemini.instance;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await gemini.text('Olá').then((resposta) => geminiResponse =
-          Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
+      await gemini.text('Olá').then((response) => geminiResponse = PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''));
       setState(() {
         chatHistory.add(geminiResponse);
       });
@@ -54,7 +58,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             ListTile(
-              title: const Text('Texto e imagem'),
+              title: const Text('Texto e imagem', style: TextStyle(color: Colors.blue)),
               onTap: () {
                 Navigator.pushReplacement(
                   context,
@@ -73,60 +77,25 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 itemCount: chatHistory.length,
                 itemBuilder: (context, index) {
-                  Parts messagePart = chatHistory[index].parts![0];
-                  String role = chatHistory[index].role!;
-                  return ListTile(
-                    title: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: role == 'user' ? Colors.blue : Colors.green,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        messagePart.text!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        role == 'user' ? 'Você' : 'Gemini',
-                        style: const TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  );
+
+                  return BoxMessage(sender: chatHistory[index].sender, message: chatHistory[index].message);
                 },
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
-            TextFormField(
+            const SizedBox(height: 20),
+            BoxTextField(
               controller: _textEditingController,
-              decoration: InputDecoration(
-                labelText: 'Digite algo',
-                filled: true,
-                fillColor: Colors.green[50],
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _handleSubmit,
-                  color: Colors.blue,
-                ),
+              onFieldSubmitted: _handleSubmit,
+              labelText: 'Digite aqui sua mensagem',
+              suffixIcons: IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: _handleSubmit,
+                color: Colors.blue,
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -134,18 +103,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSubmit() async {
-    if (_textEditingController.text.isNotEmpty) {
-      Content userMessage = Content(
-          parts: [Parts(text: _textEditingController.text)], role: 'user');
-      setState(() {
-        chatHistory.add(userMessage);
-        _textEditingController.clear();
-      });
-      await gemini.chat([userMessage]).then((resposta) => geminiResponse =
-          Content(parts: [Parts(text: '${resposta!.output}')], role: 'model'));
-      setState(() {
-        chatHistory.add(geminiResponse);
-      });
-    }
+    PromptChat userMessage = PromptChat(sender: MessageSender.user, message: _textEditingController.text);
+
+    setState(() {
+      chatHistory.add(userMessage);
+      _textEditingController.clear();
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    });
+
+    await gemini.text(userMessage.message).then((response) => geminiResponse = PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''));
+
+    setState(() {
+      chatHistory.add(geminiResponse);
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    });
   }
 }
