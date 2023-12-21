@@ -23,14 +23,15 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
-  // List<PromptChat> chatHistory = [];
+  List<PromptChat> chatHistory = [];
   // PromptChat geminiResponse = PromptChat(sender: MessageSender.gemini, message: '');
 
   @override
   void initState() {
-    super.initState();
     bloc = Provider.of<ChatBloc>(context, listen: false);
+
     bloc.chatInputSink.add(LoadChatEvent());
+    super.initState();
   }
 
   @override
@@ -84,15 +85,15 @@ class _ChatPageState extends State<ChatPage> {
                 child: StreamBuilder(
               stream: bloc.chatOutputStream,
               builder: (context, AsyncSnapshot<ChatState> snapshot) {
-                List<PromptChat> chatHistoryFromState = snapshot.data?.chatHistory ?? [];
+                chatHistory = snapshot.data?.chatHistory ?? [];
 
                 return ListView.builder(
                   controller: _scrollController,
-                  itemCount: chatHistoryFromState.length,
+                  itemCount: chatHistory.length,
                   itemBuilder: (context, index) {
                     return BoxMessage(
-                      message: chatHistoryFromState[index].message,
-                      sender: chatHistoryFromState[index].sender,
+                      message: chatHistory[index].message,
+                      sender: chatHistory[index].sender,
                     );
                   },
                 );
@@ -116,10 +117,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSubmit() async {
-    if (_textEditingController.text.isEmpty) scaffoldMessengerKey.currentState?.showSnackBar(const SnackBar(content: Text('Digite uma mensagem')));
-    bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: PromptChat(sender: MessageSender.user, message: _textEditingController.text)));
-    _textEditingController.clear();
-    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-  }
+    if (_textEditingController.text.isEmpty) {
+      scaffoldMessengerKey.currentState
+          ?.showSnackBar(const SnackBar(content: Text('Digite uma mensagem')));
+    }
 
+    bloc.chatInputSink.add(
+      SendMessageChatEvent(
+        message: PromptChat(sender: MessageSender.user, message: _textEditingController.text),
+        chatHistory: chatHistory,
+      ),
+    );
+    _textEditingController.clear();
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+  }
 }
