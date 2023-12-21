@@ -4,16 +4,19 @@ import 'package:chat_bot_app/src/chat/bloc/chat_event.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_state.dart';
 import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
 import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
+import 'package:chat_bot_app/src/chat/repository/chat_repository.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 
 class ChatBloc {
+  final ChatRepository _chatRepository;
+
   final StreamController<ChatEvent> _chatInputController = StreamController<ChatEvent>();
   final StreamController<ChatState> _chatOutputController = StreamController<ChatState>();
 
   Sink<ChatEvent> get chatInputSink => _chatInputController.sink;
   Stream<ChatState> get chatOutputStream => _chatOutputController.stream;
 
-  ChatBloc() {
+  ChatBloc({required ChatRepository chatRepository}) : _chatRepository = chatRepository {
     _chatInputController.stream.listen((event) async {
       await _mapEventToState(event);
     },);
@@ -21,7 +24,7 @@ class ChatBloc {
 
 
   Future<void> _mapEventToState(ChatEvent event) async {
-    List<PromptChat> chatHistory = [];
+    List<PromptChat> chatHistory = await _chatRepository.getChatHistory();
     _chatOutputController.add(ChatLoadingState());
 
     if (event is LoadChatEvent) {
@@ -30,6 +33,7 @@ class ChatBloc {
       );
     } else if (event is SendMessageChatEvent) {
       chatHistory.add(event.promptMessage);
+      _chatOutputController.add(ChatSuccessState(userMessage: event.promptMessage, chatHistory: chatHistory));
       
       await Gemini.instance.text(event.promptMessage.message).then(
         (response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''))
@@ -37,6 +41,7 @@ class ChatBloc {
     }
 
     _chatOutputController.add(ChatSuccessState(userMessage: chatHistory.last, chatHistory: chatHistory));
+    _chatRepository.saveChatHistory(chatHistory);
   }
 
   void dispose() {

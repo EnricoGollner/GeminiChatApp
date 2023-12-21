@@ -1,3 +1,4 @@
+import 'package:chat_bot_app/main.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_bloc.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_event.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_state.dart';
@@ -22,15 +23,20 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
-  List<PromptChat> chatHistory = [];
-  PromptChat geminiResponse = PromptChat(sender: MessageSender.gemini, message: '');
+  // List<PromptChat> chatHistory = [];
+  // PromptChat geminiResponse = PromptChat(sender: MessageSender.gemini, message: '');
 
   @override
   void initState() {
     super.initState();
     bloc = Provider.of<ChatBloc>(context, listen: false);
-    
-    bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: geminiResponse));
+    bloc.chatInputSink.add(LoadChatEvent());
+  }
+
+  @override
+  void dispose() {
+    bloc.dispose();
+    super.dispose();
   }
 
   @override
@@ -110,6 +116,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSubmit() async {
+    if (_textEditingController.text.isEmpty) scaffoldMessengerKey.currentState?.showSnackBar(const SnackBar(content: Text('Digite uma mensagem')));
     bloc.chatInputSink.add(SendMessageChatEvent(promptMessage: PromptChat(sender: MessageSender.user, message: _textEditingController.text)));
     _textEditingController.clear();
     _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
