@@ -1,3 +1,4 @@
+import 'package:chat_bot_app/main.dart';
 import 'package:chat_bot_app/src/chat/pages/chat_page.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +9,7 @@ class ChatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: ThemeData(
         drawerTheme: const DrawerThemeData(
           backgroundColor: Colors.white,

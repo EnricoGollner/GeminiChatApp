@@ -19,6 +19,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late ChatBloc bloc;
+  ChatState chatState = ChatInitialState();
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
@@ -43,83 +44,103 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat'),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              child: Text(
-                'Gemini Chat',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
+        appBar: AppBar(
+          title: const Text('Chat'),
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                ),
+                child: Text(
+                  'Gemini Chat',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              title: const Text('Texto e imagem',
-                  style: TextStyle(color: Colors.blue)),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TextAndImagePage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Expanded(
-                child: StreamBuilder(
-              stream: bloc.chatOutputStream,
-              builder: (context, AsyncSnapshot<ChatState> snapshot) {
-                chatHistory = snapshot.data?.chatHistory ?? [];
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  itemCount: chatHistory.length,
-                  itemBuilder: (context, index) {
-                    return BoxMessage(
-                      message: chatHistory[index].message,
-                      sender: chatHistory[index].sender,
-                    );
-                  },
-                );
-              },
-            )),
-            const SizedBox(height: 20),
-            BoxTextField(
-              controller: _textEditingController,
-              onFieldSubmitted: _handleSubmit,
-              labelText: 'Digite aqui sua mensagem',
-              suffixIcons: IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: _handleSubmit,
-                color: Colors.blue,
+              ListTile(
+                title: const Text('Texto e imagem',
+                    style: TextStyle(color: Colors.blue)),
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TextAndImagePage(),
+                    ),
+                  );
+                },
               ),
-            )
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: StreamBuilder(
+                stream: bloc.chatOutputStream,
+                builder: (context, AsyncSnapshot<ChatState> snapshot) {
+                  chatState = snapshot.data ?? ChatInitialState();
+                  chatHistory = snapshot.data?.chatHistory ?? [];
+        
+                  if (chatState is ChatSuccessState) {
+                    _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut);
+                  }
+        
+                  return ListView.builder(
+                    controller: _scrollController,
+                    itemCount: chatHistory.length,
+                    itemBuilder: (context, index) {
+                      return BoxMessage(
+                        message: chatHistory[index].message,
+                        sender: chatHistory[index].sender,
+                      );
+                    },
+                  );
+                },
+              )),
+              const SizedBox(height: 20),
+              BoxTextField(
+                controller: _textEditingController,
+                onFieldSubmitted: _handleSubmit,
+                labelText: 'Digite aqui sua mensagem',
+                suffixIcons: IconButton(
+                  icon: chatState is ChatLoadingState
+                      ? const CircularProgressIndicator()
+                      : const Icon(Icons.send),
+                  onPressed: _handleSubmit,
+                  color: Colors.blue,
+                ),
+              )
+            ],
+          ),
+        ));
   }
 
   Future<void> _handleSubmit() async {
     if (_textEditingController.text.isEmpty) {
-      scaffoldMessengerKey.currentState
-          ?.showSnackBar(const SnackBar(content: Text('Digite uma mensagem')));
+      scaffoldMessengerKey.currentState!.showSnackBar(
+        SnackBar(
+          content: const Text('Digite uma mensagem'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(50, 0, 50, 70),
+          action: SnackBarAction(
+            label: "x",
+            onPressed: () => scaffoldMessengerKey.currentState!
+                .hideCurrentSnackBar(reason: SnackBarClosedReason.hide),
+          ),
+        ),
+      );
+      return;
     }
 
     bloc.chatInputSink.add(
@@ -129,7 +150,5 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
     _textEditingController.clear();
-    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
   }
 }

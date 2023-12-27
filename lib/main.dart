@@ -7,6 +7,7 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 
+
 GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
