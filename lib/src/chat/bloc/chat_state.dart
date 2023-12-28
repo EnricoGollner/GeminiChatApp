@@ -13,7 +13,7 @@ class ChatInitialState extends ChatState {
 }
 
 class ChatLoadingState extends ChatState {
-  ChatLoadingState() : super(userMessage: PromptChat(sender: MessageSender.user, message: ''), chatHistory: []);
+  ChatLoadingState({required super.chatHistory}) : super(userMessage: PromptChat(sender: MessageSender.user, message: ''));
 }
 
 class ChatSuccessState extends ChatState {

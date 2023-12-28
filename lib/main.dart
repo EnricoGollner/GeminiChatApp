@@ -8,15 +8,15 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 
 
-GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
   String apiKey = dotenv.env['API_KEY']!;
-  Gemini.init(apiKey: apiKey);
 
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox('ChatPersistence');
+
+  Gemini.init(apiKey: apiKey);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -27,17 +27,8 @@ Future<void> main() async {
   );
 
   runApp(
-    MultiProvider(
-      providers: [
-        // Provider<Box>(
-        //   create: (_) => Hive.box('ChatPersistence'),
-        //   dispose: (_, Box box) => box.close(),
-        // ),
-        Provider<ChatBloc>(
-          create: (BuildContext context) => ChatBloc(/*chatRepository: ChatRepository(context: context)*/),
-          dispose: (_, ChatBloc bloc) => bloc.dispose(),
-        ),
-      ],
+    Provider(
+      create: (BuildContext context) => ChatBloc(),
       child: const ChatApp(),
     ),
   );

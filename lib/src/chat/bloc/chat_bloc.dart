@@ -25,16 +25,18 @@ class ChatBloc {
   Future<void> _mapEventToState(ChatEvent event) async {
     // List<PromptChat> chatHistory = await _chatRepository.getChatHistory();
     List<PromptChat> chatHistory = [];
-    _chatOutputController.add(ChatLoadingState());
 
     if (event is LoadChatEvent) {
-      await Gemini.instance.text('Olá, Gemini!').then(
+      _chatOutputController.add(ChatLoadingState(chatHistory: chatHistory));
+      
+      await Gemini.instance.text('Olá!').then(
         (response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''))
       );
     } else if (event is SendMessageChatEvent) {
+      _chatOutputController.add(ChatLoadingState(chatHistory: event.chatHistory));
+
       chatHistory = event.chatHistory;
       chatHistory.add(event.message);
-      _chatOutputController.add(ChatSuccessState(userMessage: event.message, chatHistory: chatHistory));
       
       await Gemini.instance.text(event.message.message).then(
         (response) => chatHistory.add(PromptChat(sender: MessageSender.gemini, message: response?.output ?? ''))
@@ -42,7 +44,6 @@ class ChatBloc {
     }
 
     _chatOutputController.add(ChatSuccessState(userMessage: chatHistory.last, chatHistory: chatHistory));
-    // _chatRepository.saveChatHistory(chatHistory);
   }
 
   void dispose() {

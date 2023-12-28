@@ -1,4 +1,3 @@
-import 'package:chat_bot_app/main.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_bloc.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_event.dart';
 import 'package:chat_bot_app/src/chat/bloc/chat_state.dart';
@@ -19,13 +18,12 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late ChatBloc bloc;
-  ChatState chatState = ChatInitialState();
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textEditingController = TextEditingController();
 
   List<PromptChat> chatHistory = [];
-  // PromptChat geminiResponse = PromptChat(sender: MessageSender.gemini, message: '');
+  ChatState chatState = ChatInitialState();
 
   @override
   void initState() {
@@ -33,12 +31,6 @@ class _ChatPageState extends State<ChatPage> {
 
     bloc.chatInputSink.add(LoadChatEvent());
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    bloc.dispose();
-    super.dispose();
   }
 
   @override
@@ -64,8 +56,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
               ListTile(
-                title: const Text('Texto e imagem',
-                    style: TextStyle(color: Colors.blue)),
+                title: const Text('Texto e imagem', style: TextStyle(color: Colors.blue)),
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
@@ -80,63 +71,61 @@ class _ChatPageState extends State<ChatPage> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: StreamBuilder(
-                stream: bloc.chatOutputStream,
-                builder: (context, AsyncSnapshot<ChatState> snapshot) {
-                  chatState = snapshot.data ?? ChatInitialState();
-                  chatHistory = snapshot.data?.chatHistory ?? [];
-        
-                  if (chatState is ChatSuccessState) {
-                    _scrollController.animateTo(
-                        _scrollController.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut);
-                  }
-        
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: chatHistory.length,
-                    itemBuilder: (context, index) {
-                      return BoxMessage(
-                        message: chatHistory[index].message,
-                        sender: chatHistory[index].sender,
-                      );
-                    },
-                  );
-                },
-              )),
-              const SizedBox(height: 20),
-              BoxTextField(
-                controller: _textEditingController,
-                onFieldSubmitted: _handleSubmit,
-                labelText: 'Digite aqui sua mensagem',
-                suffixIcons: IconButton(
-                  icon: chatState is ChatLoadingState
-                      ? const CircularProgressIndicator()
-                      : const Icon(Icons.send),
-                  onPressed: _handleSubmit,
-                  color: Colors.blue,
-                ),
-              )
-            ],
+          child: StreamBuilder<ChatState>(
+            stream: bloc.chatOutputStream,
+            builder: (context, AsyncSnapshot<ChatState> snapshot) {
+              chatHistory = snapshot.data?.chatHistory ?? [];
+              chatState = snapshot.data ?? ChatInitialState();
+              
+              if (chatState is ChatSuccessState) {
+                _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+              }
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: chatHistory.length,
+                      itemBuilder: (context, index) {
+                        return BoxMessage(
+                          message: chatHistory[index].message,
+                          sender: chatHistory[index].sender,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  BoxTextField(
+                    controller: _textEditingController,
+                    onFieldSubmitted: _handleSubmit,
+                    labelText: 'Digite aqui sua mensagem',
+                    suffixIcons: IconButton(
+                      icon: chatState is ChatSuccessState
+                          ? const Icon(Icons.send)
+                          : const CircularProgressIndicator(),
+                      onPressed: _handleSubmit,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-        ));
+        ),
+      );
   }
 
   Future<void> _handleSubmit() async {
     if (_textEditingController.text.isEmpty) {
-      scaffoldMessengerKey.currentState!.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Digite uma mensagem'),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.fromLTRB(50, 0, 50, 70),
           action: SnackBarAction(
             label: "x",
-            onPressed: () => scaffoldMessengerKey.currentState!
-                .hideCurrentSnackBar(reason: SnackBarClosedReason.hide),
+            onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(reason: SnackBarClosedReason.hide),
           ),
         ),
       );
@@ -150,5 +139,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
     _textEditingController.clear();
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
   }
 }
