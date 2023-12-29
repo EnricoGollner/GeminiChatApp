@@ -78,7 +78,13 @@ class _ChatPageState extends State<ChatPage> {
               chatState = snapshot.data ?? ChatInitialState();
               
               if (chatState is ChatSuccessState) {
-                _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scrollController.animateTo(
+                    _scrollController.position.maxScrollExtent,
+                    duration: const Duration(seconds: 4),
+                    curve: Curves.easeInOut,
+                  );
+                });
               }
 
               return Column(
@@ -98,13 +104,13 @@ class _ChatPageState extends State<ChatPage> {
                   const SizedBox(height: 20),
                   BoxTextField(
                     controller: _textEditingController,
-                    onFieldSubmitted: _handleSubmit,
+                    onFieldSubmitted: chatState is !ChatSuccessState ? (){} : _handleSubmit,
                     labelText: 'Digite aqui sua mensagem',
                     suffixIcons: IconButton(
                       icon: chatState is ChatSuccessState
                           ? const Icon(Icons.send)
                           : const CircularProgressIndicator(),
-                      onPressed: _handleSubmit,
+                      onPressed: chatState is !ChatSuccessState ? null : _handleSubmit,
                       color: Colors.blue,
                     ),
                   ),
@@ -139,6 +145,6 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
     _textEditingController.clear();
-    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(seconds: 4), curve: Curves.easeInOut);
   }
 }
