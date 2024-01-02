@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 
 class BoxMessage extends StatelessWidget {
   final MessageSender sender;
-  final Uint8List? image;
+  final List<Uint8List>? images;
   final String message;
 
-  const BoxMessage({super.key, required this.sender, this.image, required this.message});
+  const BoxMessage(
+      {super.key, required this.sender, this.images, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +26,30 @@ class BoxMessage extends StatelessWidget {
               : CrossAxisAlignment.end,
           children: [
             Visibility(
-              visible: image != null,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Image.memory(image ?? Uint8List.fromList([]))),
+              visible: images != null && images!.isNotEmpty,
+              child: ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: images == null ? 0 : images!.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Image.memory(
+                      images![index],
+                      fit: BoxFit.cover,
+                      height: 180,
+                      width: 200,
+                    ),
+                  );
+                },
+              ),
             ),
             Text(
               message,
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: sender == MessageSender.gemini ? null : FontWeight.bold,
+                fontWeight:
+                    sender == MessageSender.gemini ? null : FontWeight.bold,
               ),
             ),
           ],

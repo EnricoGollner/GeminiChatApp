@@ -130,10 +130,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_gemini
-      sha256: eb9c94b4891f6568c7e4399e67ce2fe02b0b7de94c89bf765377de62f65c001f
+      sha256: "3de3a1ffbd8efef8f10c65b9cc752591cc74a7d72ea1cc77e1f227a3af114ee1"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "2.0.0"
   flutter_lints:
     dependency: "direct dev"
     description:

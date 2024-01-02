@@ -5,22 +5,22 @@ import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
 import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
 
 class PromptChatAndImage extends PromptChat {
-  final Uint8List? imageBytes;
+  final List<Uint8List>? images;
 
   PromptChatAndImage({
     required super.sender,
-    this.imageBytes,
+    this.images,
     super.message = '',
   });
 
   PromptChatAndImage copyWith({
     MessageSender? sender,
-    Uint8List? imageBytes,
+    List<Uint8List>? images,
     String? message,
   }) {
     return PromptChatAndImage(
       sender: sender ?? this.sender,
-      imageBytes: imageBytes ?? this.imageBytes,
+      images: images ?? this.images,
       message: message ?? this.message,
     );
   }
