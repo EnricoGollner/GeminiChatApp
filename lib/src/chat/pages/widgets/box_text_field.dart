@@ -20,14 +20,15 @@ class BoxTextField extends StatelessWidget {
       onFieldSubmitted: (_) => onFieldSubmitted(),
       onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       controller: controller,
-      
-      style: const TextStyle(fontSize: 16, color: Color.fromARGB(255, 87, 87, 87)),
+      style:
+          const TextStyle(fontSize: 16, color: Color.fromARGB(255, 87, 87, 87)),
       decoration: InputDecoration(
         labelText: 'Digite algo',
         labelStyle: const TextStyle(fontSize: 16, color: Colors.blue),
         filled: true,
         fillColor: Colors.blue.withAlpha(50),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: const BorderSide(

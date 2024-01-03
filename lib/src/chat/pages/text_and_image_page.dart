@@ -9,6 +9,7 @@ import 'package:chat_bot_app/src/chat/pages/widgets/box_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 
 class TextAndImagePage extends StatefulWidget {
   const TextAndImagePage({super.key});
@@ -59,16 +60,13 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
+            DrawerHeader(
+              decoration: const BoxDecoration(
                 color: Colors.blue,
               ),
-              child: Text(
-                'Gemini Chat',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                ),
+              child: Lottie.asset(
+                'assets/logo.json',
+                fit: BoxFit.contain,
               ),
             ),
             ListTile(
@@ -127,33 +125,39 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                   controller: _textEditingController,
                   onFieldSubmitted: carregando() ? () {} : _handleSubmit,
                   labelText: 'Digite aqui sua mensagem',
-                  suffixIcons: SizedBox(
-                    width: 150,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.image),
-                          onPressed: () => carregando()
-                              ? null
-                              : _pickImage(source: ImageSource.gallery),
-                          color: Colors.green,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.camera),
-                          onPressed: () => carregando()
-                              ? null
-                              : _takePhoto(source: ImageSource.camera),
-                          color: Colors.green,
-                        ),
-                        carregando()
-                            ? const CircularProgressIndicator()
-                            : IconButton(
-                                icon: const Icon(Icons.send),
-                                onPressed: _handleSubmit,
-                                color: Colors.blue,
+                  suffixIcons: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.image),
+                        onPressed: () => carregando()
+                            ? null
+                            : _pickImage(source: ImageSource.gallery),
+                        color: Colors.green,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.camera),
+                        onPressed: () => carregando()
+                            ? null
+                            : _takePhoto(source: ImageSource.camera),
+                        color: Colors.green,
+                      ),
+                      carregando()
+                          ? Padding(
+                              padding: const EdgeInsets.only(right: 3),
+                              child: Lottie.asset(
+                                'assets/loading.json',
+                                width: 45,
+                                height: 45,
+                                fit: BoxFit.cover,
                               ),
-                      ],
-                    ),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed: _handleSubmit,
+                              color: Colors.blue,
+                            ),
+                    ],
                   ),
                 )
               ],
