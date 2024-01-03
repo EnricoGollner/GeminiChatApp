@@ -5,10 +5,9 @@ import 'package:chat_bot_app/src/chat/bloc/chat_state.dart';
 import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
 import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:hive/hive.dart';
 
 class ChatBloc {
-  // final ChatRepository _chatRepository;
-
   final StreamController<ChatEvent> _chatInputController =
       StreamController<ChatEvent>();
   final StreamController<ChatState> _chatOutputController =
@@ -19,7 +18,9 @@ class ChatBloc {
 
   List<Content> chat = [];
 
-  ChatBloc(/*{required ChatRepository chatRepository}*/) {
+  var boxChat = Hive.box('ChatPersistence');
+
+  ChatBloc() {
     _chatInputController.stream.listen(
       (event) async {
         await _mapEventToState(event);
@@ -28,15 +29,21 @@ class ChatBloc {
   }
 
   Future<void> _mapEventToState(ChatEvent event) async {
-    // List<PromptChat> chatHistory = await _chatRepository.getChatHistory();
     List<PromptChat> chatHistory = [];
 
     if (event is LoadChatEvent) {
-      _chatOutputController.add(ChatLoadingState(chatHistory: chatHistory));
+      var historico = await boxChat.get('chatHistory', defaultValue: []);
 
-      await Gemini.instance.text('Olá!').then((response) => chatHistory.add(
-          PromptChat(
-              sender: MessageSender.gemini, message: response?.output ?? '')));
+      if (historico.isEmpty) {
+        _chatOutputController.add(ChatLoadingState(chatHistory: chatHistory));
+
+        await Gemini.instance.text('Olá!').then((response) => chatHistory.add(
+            PromptChat(
+                sender: MessageSender.gemini,
+                message: response?.output ?? '')));
+      } else {
+        chatHistory = historico.cast<PromptChat>();
+      }
     } else if (event is SendMessageChatEvent) {
       _chatOutputController
           .add(ChatLoadingState(chatHistory: event.chatHistory));
@@ -51,7 +58,7 @@ class ChatBloc {
         ),
       );
 
-      await Gemini.instance.chat(chat).then((response) {
+      await Gemini.instance.chat(chat).then((response) async {
         chatHistory.add(PromptChat(
             sender: MessageSender.gemini, message: response?.output ?? ''));
         chat.add(
@@ -60,11 +67,17 @@ class ChatBloc {
             role: 'model',
           ),
         );
+
+        await boxChat.put('chatHistory', chatHistory);
       });
     }
 
     _chatOutputController.add(ChatSuccessState(
         userMessage: chatHistory.last, chatHistory: chatHistory));
+  }
+
+  void deleteHistory() async {
+    await boxChat.delete('chatHistory');
   }
 
   void dispose() {

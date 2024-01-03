@@ -1,11 +1,12 @@
-import 'package:chat_bot_app/src/chat/bloc/chat_bloc.dart';
+import 'package:chat_bot_app/src/chat/model/enums/message_sender.dart';
+import 'package:chat_bot_app/src/chat/model/prompt_chat.dart';
+import 'package:chat_bot_app/src/chat/model/prompt_chat_image.dart';
 import 'package:chat_bot_app/src/chat_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:provider/provider.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
@@ -13,6 +14,9 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  Hive.registerAdapter(PromptChatAdapter());
+  Hive.registerAdapter(PromptChatAndImageAdapter());
+  Hive.registerAdapter(MessageSenderAdapter());
   await Hive.openBox('ChatPersistence');
 
   Gemini.init(apiKey: apiKey);
@@ -26,9 +30,6 @@ Future<void> main() async {
   );
 
   runApp(
-    Provider(
-      create: (BuildContext context) => ChatBloc(),
-      child: const ChatApp(),
-    ),
+    const ChatApp(),
   );
 }

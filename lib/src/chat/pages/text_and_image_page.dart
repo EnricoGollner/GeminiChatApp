@@ -8,6 +8,7 @@ import 'package:chat_bot_app/src/chat/pages/widgets/box_message.dart';
 import 'package:chat_bot_app/src/chat/pages/widgets/box_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 
@@ -33,6 +34,8 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
   List<Uint8List> imageList = [];
   List<int> imageIndexes = [];
 
+  var boxChat = Hive.box('ChatPersistence');
+
   @override
   void initState() {
     super.initState();
@@ -40,70 +43,161 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
     gemini = Gemini.instance;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await gemini.text('Olá').then((resposta) => geminiResponse =
-          PromptChatAndImage(
-              sender: MessageSender.gemini, message: resposta!.output ?? ''));
+      var historico = await boxChat.get('chatImageHistory', defaultValue: []);
 
-      setState(() {
-        chatHistory.add(geminiResponse);
-      });
+      if (historico.isEmpty) {
+        await gemini.text('Olá').then((resposta) => geminiResponse =
+            PromptChatAndImage(
+                sender: MessageSender.gemini, message: resposta!.output ?? ''));
+
+        setState(() {
+          chatHistory.add(geminiResponse);
+        });
+      } else {
+        setState(() {
+          chatHistory = historico.cast<PromptChatAndImage>();
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat with Image'),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.blue,
+    return GeminiResponseTypeView(
+      builder: (context, child, response, loading) {
+        bool carregando() {
+          if (loading && response == null) return true;
+          return false;
+        }
+
+        if (!loading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(seconds: 4),
+              curve: Curves.easeInOut,
+            );
+          });
+        }
+        return Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            title: const Text('Chat with Image'),
+            actions: [
+              IconButton(
+                onPressed: carregando()
+                    ? null
+                    : () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ChatPage(),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.text_fields_rounded),
               ),
-              child: Lottie.asset(
-                'assets/logo.json',
-                fit: BoxFit.contain,
-              ),
-            ),
-            ListTile(
-              title: const Text(
-                'Apenas texto',
-                style: TextStyle(color: Colors.blue),
-              ),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ChatPage(),
+            ],
+          ),
+          drawer: Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    color: Colors.blue,
                   ),
-                );
-              },
+                  child: Lottie.asset(
+                    'assets/logo.json',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                carregando()
+                    ? Container()
+                    : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.delete,
+                            color: Colors.grey[200],
+                          ),
+                          title: const Text(
+                            'Excluir chat',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          tileColor: Colors.purple[200],
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10.0, horizontal: 16.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.0),
+                          ),
+                          onTap: () async {
+                            await boxChat.delete('chatImageHistory');
+                            setState(() {
+                              chatHistory.clear();
+                            });
+                          },
+                        ),
+                      ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.info,
+                      color: Colors.grey[200],
+                    ),
+                    title: const Text(
+                      'Sobre',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    tileColor: Colors.purple[200],
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10.0, horizontal: 16.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.0),
+                    ),
+                    onTap: () async {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Lottie.asset(
+                              'assets/logo.json',
+                              height: 140,
+                            ),
+                            content: const Text(
+                              'Esse aplicativo foi feito por Enrico e Lucas para aprender algumas tecnologias, desfrute dessa IA.',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      body: GeminiResponseTypeView(
-        builder: (context, child, response, loading) {
-          bool carregando() {
-            if (loading && response == null) return true;
-            return false;
-          }
-
-          if (!loading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(seconds: 4),
-                curve: Curves.easeInOut,
-              );
-            });
-          }
-
-          return Padding(
+          ),
+          body: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
@@ -162,9 +256,9 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
                 )
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -254,6 +348,8 @@ class _TextAndImagePageState extends State<TextAndImagePage> {
       setState(() {
         chatHistory.add(geminiResponse);
       });
+
+      await boxChat.put('chatImageHistory', chatHistory);
     }
   }
 }
